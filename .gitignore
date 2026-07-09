@@ -19,6 +19,7 @@ models/*.h5
 models/*.pkl
 models/*.bin
 models/*.safetensors
+models/*.hdf5
 !models/README.md
 
 # ========================

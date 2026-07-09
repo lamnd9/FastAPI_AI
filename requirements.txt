@@ -1,6 +1,8 @@
 # ========================
 # FastAPI AI Service
 # ========================
+# Dùng với conda env: FoodRecognition_env
+# Activate: conda activate FoodRecognition_env
 
 # --- Core ---
 fastapi==0.115.0
@@ -9,13 +11,11 @@ pydantic==2.9.0
 pydantic-settings==2.5.0
 python-multipart==0.0.9
 
-# --- AI / Deep Learning ---
-numpy==1.26.4
-Pillow==10.4.0
-# torch==2.4.0          # Uncomment and specify version for PyTorch
-# torchvision==0.19.0   # Uncomment for image models
-# onnxruntime==1.19.0   # Uncomment for ONNX model inference
-# tensorflow==2.17.0    # Uncomment for TensorFlow models
+# --- AI / Deep Learning (đã có sẵn trong conda env) ---
+# tensorflow-macos==2.15.0
+# tensorflow-metal==1.1.0
+# numpy==1.26.4
+# pillow==12.3.0
 
 # --- Logging & Monitoring ---
 loguru==0.7.2

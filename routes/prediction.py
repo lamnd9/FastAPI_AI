@@ -1,106 +1,98 @@
 """
 Prediction Route
 ==================
-Endpoint for AI model inference / prediction.
+Endpoint for food recognition using EfficientNetV2 model.
+Upload an image, get back the predicted dish name and top-5 results.
 """
 
+import os
+
+import numpy as np
 from fastapi import APIRouter, File, UploadFile, HTTPException
 
-from schemas.prediction import PredictionRequest, PredictionResponse
+from schemas.prediction import PredictResponse, FoodPredictionItem
+from utils.image_processing import preprocess_image, softmax
+from utils.model_loader import get_model, get_class_labels
 from utils.logger import logger
 
 router = APIRouter()
 
+# Supported image extensions
+ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+
 
 @router.post(
     "/predict",
-    response_model=PredictionResponse,
-    summary="Run AI Model Prediction",
+    response_model=PredictResponse,
+    summary="Dự đoán món ăn từ ảnh gửi lên",
 )
-async def predict(request: PredictionRequest):
+async def predict_food(file: UploadFile = File(...)):
     """
-    Run prediction using the loaded AI model.
+    Upload ảnh món ăn và nhận kết quả nhận diện.
 
-    Accepts input data via JSON body and returns model predictions.
+    - Hỗ trợ định dạng: **JPG, JPEG, PNG, WebP**
+    - Trả về: món ăn dự đoán cao nhất + top 5 kết quả
     """
-    try:
-        # ============================================================
-        # TODO: Replace this placeholder with actual model inference
-        # Example:
-        #   from utils.model_loader import get_model
-        #   model = get_model()
-        #   result = model.predict(request.input_data)
-        # ============================================================
 
-        logger.info(f"🔮 Prediction request received: {request.input_data[:100]}...")
-
-        prediction_result = {
-            "prediction": "placeholder_result",
-            "confidence": 0.95,
-        }
-
-        return PredictionResponse(
-            success=True,
-            message="Prediction completed successfully",
-            data=prediction_result,
+    # 1. Validate file extension
+    extension = os.path.splitext(file.filename or "")[1].lower()
+    if extension not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Chỉ hỗ trợ ảnh định dạng {', '.join(ALLOWED_EXTENSIONS)}. "
+                   f"File gửi lên có định dạng: '{extension}'",
         )
 
-    except Exception as e:
-        logger.error(f"❌ Prediction failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
-
-
-@router.post(
-    "/predict/image",
-    response_model=PredictionResponse,
-    summary="Run AI Model Prediction on Image",
-)
-async def predict_image(file: UploadFile = File(...)):
-    """
-    Run prediction on an uploaded image file.
-
-    Accepts an image file and returns model predictions.
-    """
     try:
-        # Validate file type
-        if file.content_type not in ["image/jpeg", "image/png", "image/webp"]:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Unsupported file type: {file.content_type}. "
-                       f"Supported types: JPEG, PNG, WebP.",
-            )
-
-        contents = await file.read()
+        # 2. Read image bytes
+        image_bytes = await file.read()
         logger.info(
-            f"🖼️ Image prediction request: {file.filename} "
-            f"({len(contents)} bytes)"
+            f"🖼️ Nhận ảnh: {file.filename} ({len(image_bytes):,} bytes)"
         )
 
-        # ============================================================
-        # TODO: Replace with actual image model inference
-        # Example:
-        #   from PIL import Image
-        #   import io
-        #   image = Image.open(io.BytesIO(contents))
-        #   result = model.predict(image)
-        # ============================================================
+        # 3. Preprocess image -> tensor (1, 224, 224, 3)
+        input_tensor = preprocess_image(image_bytes)
 
-        prediction_result = {
-            "prediction": "placeholder_class",
-            "confidence": 0.92,
-            "filename": file.filename,
-        }
+        # 4. Run model inference
+        model = get_model()
+        preds = model.predict(input_tensor)
+        raw_logits = preds[0]
 
-        return PredictionResponse(
-            success=True,
-            message="Image prediction completed successfully",
-            data=prediction_result,
+        # 5. Convert logits -> probabilities via softmax
+        probabilities = softmax(raw_logits)
+
+        # 6. Get top-1 prediction
+        class_labels = get_class_labels()
+        predicted_idx = int(np.argmax(probabilities))
+        predicted_class = class_labels[predicted_idx]
+        confidence = float(probabilities[predicted_idx])
+
+        # 7. Get top-5 predictions
+        top_5_indices = np.argsort(probabilities)[-5:][::-1]
+        top_5_results = [
+            FoodPredictionItem(
+                class_name=class_labels[idx],
+                probability=round(float(probabilities[idx]), 4),
+            )
+            for idx in top_5_indices
+        ]
+
+        logger.info(
+            f"🔮 Kết quả: {predicted_class} ({confidence:.2%}) | "
+            f"Top-5: {[r.class_name for r in top_5_results]}"
+        )
+
+        return PredictResponse(
+            prediction=predicted_class,
+            confidence=round(confidence, 4),
+            top_5=top_5_results,
         )
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ Image prediction failed: {e}")
+        logger.error(f"❌ Lỗi xử lý ảnh: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Image prediction failed: {str(e)}"
+            status_code=500,
+            detail=f"Lỗi trong quá trình xử lý ảnh: {str(e)}",
         )

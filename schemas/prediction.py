@@ -1,46 +1,41 @@
 """
 Prediction Schemas
 ===================
-Pydantic models for prediction request and response validation.
+Pydantic models for food recognition prediction request and response.
 """
-
-from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
 
-class PredictionRequest(BaseModel):
-    """Schema for prediction request body."""
+class FoodPredictionItem(BaseModel):
+    """A single food prediction result."""
 
-    input_data: str = Field(
+    class_name: str = Field(
         ...,
-        description="Input data for the AI model (text, base64-encoded image, etc.)",
-        examples=["Hello, classify this text for me."],
+        description="Tên món ăn được dự đoán",
+        examples=["Pho"],
     )
-    model_name: Optional[str] = Field(
-        default=None,
-        description="Optional model name to use for prediction",
-        examples=["default_model"],
-    )
-    parameters: Optional[dict[str, Any]] = Field(
-        default=None,
-        description="Optional inference parameters (e.g., threshold, top_k)",
-        examples=[{"threshold": 0.5, "top_k": 5}],
-    )
-
-
-class PredictionResponse(BaseModel):
-    """Schema for prediction response body."""
-
-    success: bool = Field(
+    probability: float = Field(
         ...,
-        description="Whether the prediction was successful",
+        description="Xác suất dự đoán (0.0 - 1.0)",
+        examples=[0.9523],
     )
-    message: str = Field(
+
+
+class PredictResponse(BaseModel):
+    """Response schema for food prediction endpoint."""
+
+    prediction: str = Field(
         ...,
-        description="Human-readable status message",
+        description="Tên món ăn có xác suất cao nhất",
+        examples=["Pho"],
     )
-    data: Optional[dict[str, Any]] = Field(
-        default=None,
-        description="Prediction results",
+    confidence: float = Field(
+        ...,
+        description="Độ tin cậy của dự đoán chính (0.0 - 1.0)",
+        examples=[0.9523],
+    )
+    top_5: list[FoodPredictionItem] = Field(
+        ...,
+        description="Top 5 món ăn có xác suất cao nhất",
     )

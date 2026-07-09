@@ -1,98 +1,68 @@
 """
 Model Loader Utility
 =====================
-Utility to load and cache AI/Deep Learning models.
+Load and cache the EfficientNetV2 food recognition model and class labels.
 """
 
+import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
-from utils.logger import logger
+import tensorflow as tf
+from tensorflow.keras import models
+
 from config.settings import settings
+from utils.logger import logger
+
+# --- Singleton model and class labels ---
+_model: Optional[tf.keras.Model] = None
+_class_labels: list[str] = []
 
 
-class ModelLoader:
+def load_model_and_classes() -> None:
     """
-    Singleton model loader that caches loaded models in memory.
-
-    Usage:
-        loader = ModelLoader()
-        model = loader.load("my_model", "models/my_model.onnx")
-        prediction = model.predict(input_data)
+    Load the EfficientNetV2 model and class labels into memory.
+    Called once during application startup.
     """
+    global _model, _class_labels
 
-    _instance: Optional["ModelLoader"] = None
-    _models: dict[str, Any] = {}
+    base_dir = Path(os.path.dirname(os.path.abspath(__file__))).parent
+    model_path = base_dir / settings.MODEL_PATH / settings.MODEL_FILE
+    classes_path = base_dir / settings.CLASSES_PATH
 
-    def __new__(cls) -> "ModelLoader":
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._models = {}
-        return cls._instance
+    # 1. Load class labels
+    if not classes_path.exists():
+        raise RuntimeError(
+            f"Không tìm thấy file nhãn tại {classes_path}. "
+            f"Vui lòng đặt file product_classes.txt vào thư mục gốc dự án."
+        )
 
-    def load(self, model_name: str, model_path: Optional[str] = None) -> Any:
-        """
-        Load a model by name. Returns cached version if already loaded.
+    with open(classes_path, "r", encoding="utf-8") as f:
+        _class_labels = [line.strip() for line in f.readlines() if line.strip()]
 
-        Args:
-            model_name: Identifier for the model.
-            model_path: Path to the model file. Defaults to settings.MODEL_PATH / model_name.
+    logger.info(f"📋 Đã tải {len(_class_labels)} nhãn món ăn từ {classes_path.name}")
 
-        Returns:
-            The loaded model object.
-        """
-        if model_name in self._models:
-            logger.info(f"📦 Model '{model_name}' loaded from cache.")
-            return self._models[model_name]
+    # 2. Load Keras model
+    if not model_path.exists():
+        raise RuntimeError(
+            f"Không tìm thấy file model tại {model_path}. "
+            f"Vui lòng đặt model weights vào thư mục '{settings.MODEL_PATH}'."
+        )
 
-        if model_path is None:
-            model_path = str(Path(settings.MODEL_PATH) / model_name)
-
-        path = Path(model_path)
-        if not path.exists():
-            raise FileNotFoundError(
-                f"Model file not found: {model_path}. "
-                f"Please place your model weights in the '{settings.MODEL_PATH}' directory."
-            )
-
-        logger.info(f"⏳ Loading model '{model_name}' from {model_path}...")
-
-        # ============================================================
-        # TODO: Implement actual model loading based on framework
-        # Examples:
-        #
-        # --- PyTorch ---
-        # import torch
-        # model = torch.load(model_path, map_location="cpu")
-        # model.eval()
-        #
-        # --- ONNX Runtime ---
-        # import onnxruntime as ort
-        # model = ort.InferenceSession(model_path)
-        #
-        # --- TensorFlow / Keras ---
-        # import tensorflow as tf
-        # model = tf.keras.models.load_model(model_path)
-        # ============================================================
-
-        model = None  # Placeholder — replace with actual loading logic
-
-        self._models[model_name] = model
-        logger.info(f"✅ Model '{model_name}' loaded successfully.")
-
-        return model
-
-    def unload(self, model_name: str) -> None:
-        """Remove a model from the cache."""
-        if model_name in self._models:
-            del self._models[model_name]
-            logger.info(f"🗑️ Model '{model_name}' unloaded from cache.")
-
-    def list_models(self) -> list[str]:
-        """Return names of all currently loaded models."""
-        return list(self._models.keys())
+    logger.info(f"⏳ Đang nạp model EfficientNetV2 từ {model_path.name}...")
+    _model = models.load_model(str(model_path))
+    logger.info("✅ Nạp model EfficientNetV2 thành công!")
 
 
-def get_model_loader() -> ModelLoader:
-    """Get the singleton ModelLoader instance."""
-    return ModelLoader()
+def get_model() -> tf.keras.Model:
+    """Get the loaded Keras model. Raises if not loaded yet."""
+    if _model is None:
+        raise RuntimeError("Model chưa được nạp. Hãy gọi load_model_and_classes() trước.")
+    return _model
+
+
+def get_class_labels() -> list[str]:
+    """Get the loaded class labels list. Raises if not loaded yet."""
+    if not _class_labels:
+        raise RuntimeError("Class labels chưa được nạp. Hãy gọi load_model_and_classes() trước.")
+    return _class_labels

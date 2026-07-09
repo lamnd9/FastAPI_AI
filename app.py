@@ -1,7 +1,7 @@
 """
 FastAPI Application Initialization
 ===================================
-Main application factory for the FastAPI AI service.
+Main application factory for the AI4Food Nutrition Recognition API.
 """
 
 from fastapi import FastAPI
@@ -17,7 +17,7 @@ def create_app() -> FastAPI:
 
     app = FastAPI(
         title=settings.APP_NAME,
-        description="FastAPI base structure for AI model serving",
+        description="API nhận diện món ăn chi tiết (840 món) sử dụng mạng EfficientNetV2",
         version=settings.APP_VERSION,
         docs_url="/docs",
         redoc_url="/redoc",
@@ -40,14 +40,18 @@ def create_app() -> FastAPI:
     app.include_router(prediction.router, prefix="/api/v1", tags=["Prediction"])
 
     @app.on_event("startup")
-    async def startup_event():
-        """Actions to perform on application startup."""
-        print(f"🚀 {settings.APP_NAME} v{settings.APP_VERSION} is starting up...")
+    def startup_event():
+        """Load AI model and class labels into memory on startup."""
+        from utils.model_loader import load_model_and_classes
+
+        print(f"🚀 {settings.APP_NAME} v{settings.APP_VERSION} đang khởi động...")
+        load_model_and_classes()
+        print(f"✅ {settings.APP_NAME} sẵn sàng phục vụ!")
 
     @app.on_event("shutdown")
     async def shutdown_event():
         """Actions to perform on application shutdown."""
-        print(f"🛑 {settings.APP_NAME} is shutting down...")
+        print(f"🛑 {settings.APP_NAME} đang tắt...")
 
     return app
 

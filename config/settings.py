@@ -5,6 +5,8 @@ Central configuration using pydantic-settings.
 Values are loaded from environment variables or .env file.
 """
 
+from typing import List
+
 from pydantic_settings import BaseSettings
 
 
@@ -12,7 +14,7 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     # --- App ---
-    APP_NAME: str = "FastAPI AI Service"
+    APP_NAME: str = "AI4Food Nutrition Recognition API"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
 
@@ -22,11 +24,13 @@ class Settings(BaseSettings):
     WORKERS: int = 1
 
     # --- CORS ---
-    ALLOWED_ORIGINS: list[str] = ["*"]
+    ALLOWED_ORIGINS: List[str] = ["*"]
 
     # --- Model ---
     MODEL_PATH: str = "models/"
-    MODEL_NAME: str = "default_model"
+    MODEL_FILE: str = "efficientnetv2_product_model.hdf5"
+    CLASSES_PATH: str = "product_classes.txt"
+    IMAGE_SIZE: int = 224
 
     # --- Logging ---
     LOG_LEVEL: str = "INFO"
