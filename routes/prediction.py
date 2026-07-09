@@ -1,8 +1,8 @@
 """
 Prediction Route
 ==================
-Endpoint for food recognition using EfficientNetV2 model.
-Upload an image, get back the predicted dish name and top-5 results.
+Endpoint for Cats vs Dogs classification using MobileNetV2.
+Upload an image, get back the predicted animal type and confidence.
 """
 
 import os
@@ -10,7 +10,7 @@ import os
 import numpy as np
 from fastapi import APIRouter, File, UploadFile, HTTPException
 
-from schemas.prediction import PredictResponse, FoodPredictionItem
+from schemas.prediction import PredictResponse, ClassPredictionItem
 from utils.image_processing import preprocess_image, softmax
 from utils.model_loader import get_model, get_class_labels
 from utils.logger import logger
@@ -24,14 +24,14 @@ ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 @router.post(
     "/predict",
     response_model=PredictResponse,
-    summary="Dự đoán món ăn từ ảnh gửi lên",
+    summary="Dự đoán Chó hoặc Mèo từ ảnh gửi lên",
 )
-async def predict_food(file: UploadFile = File(...)):
+async def predict_image(file: UploadFile = File(...)):
     """
-    Upload ảnh món ăn và nhận kết quả nhận diện.
+    Upload ảnh vật nuôi và nhận kết quả nhận diện (Chó hoặc Mèo).
 
     - Hỗ trợ định dạng: **JPG, JPEG, PNG, WebP**
-    - Trả về: món ăn dự đoán cao nhất + top 5 kết quả
+    - Trả về: kết quả dự đoán cao nhất + xác suất chi tiết
     """
 
     # 1. Validate file extension
@@ -50,7 +50,7 @@ async def predict_food(file: UploadFile = File(...)):
             f"🖼️ Nhận ảnh: {file.filename} ({len(image_bytes):,} bytes)"
         )
 
-        # 3. Preprocess image -> tensor (1, 224, 224, 3)
+        # 3. Preprocess image -> tensor (1, 160, 160, 3)
         input_tensor = preprocess_image(image_bytes)
 
         # 4. Run model inference
@@ -67,25 +67,26 @@ async def predict_food(file: UploadFile = File(...)):
         predicted_class = class_labels[predicted_idx]
         confidence = float(probabilities[predicted_idx])
 
-        # 7. Get top-5 predictions
-        top_5_indices = np.argsort(probabilities)[-5:][::-1]
-        top_5_results = [
-            FoodPredictionItem(
+        # 7. Get top predictions (dynamically sized based on number of classes, up to 5)
+        top_k = min(5, len(class_labels))
+        top_indices = np.argsort(probabilities)[-top_k:][::-1]
+        top_results = [
+            ClassPredictionItem(
                 class_name=class_labels[idx],
                 probability=round(float(probabilities[idx]), 4),
             )
-            for idx in top_5_indices
+            for idx in top_indices
         ]
 
         logger.info(
             f"🔮 Kết quả: {predicted_class} ({confidence:.2%}) | "
-            f"Top-5: {[r.class_name for r in top_5_results]}"
+            f"Chi tiết: {[r.class_name for r in top_results]}"
         )
 
         return PredictResponse(
             prediction=predicted_class,
             confidence=round(confidence, 4),
-            top_5=top_5_results,
+            top_5=top_results,
         )
 
     except HTTPException:

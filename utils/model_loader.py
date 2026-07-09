@@ -1,7 +1,7 @@
 """
 Model Loader Utility
 =====================
-Load and cache the EfficientNetV2 food recognition model and class labels.
+Load and cache the image classification model and class labels.
 """
 
 import os
@@ -21,7 +21,7 @@ _class_labels: list[str] = []
 
 def load_model_and_classes() -> None:
     """
-    Load the EfficientNetV2 model and class labels into memory.
+    Load the configured classification model and class labels into memory.
     Called once during application startup.
     """
     global _model, _class_labels
@@ -34,13 +34,13 @@ def load_model_and_classes() -> None:
     if not classes_path.exists():
         raise RuntimeError(
             f"Không tìm thấy file nhãn tại {classes_path}. "
-            f"Vui lòng đặt file product_classes.txt vào thư mục gốc dự án."
+            f"Vui lòng cấu hình CLASSES_PATH chính xác."
         )
 
     with open(classes_path, "r", encoding="utf-8") as f:
         _class_labels = [line.strip() for line in f.readlines() if line.strip()]
 
-    logger.info(f"📋 Đã tải {len(_class_labels)} nhãn món ăn từ {classes_path.name}")
+    logger.info(f"📋 Đã tải {len(_class_labels)} nhãn phân loại từ {classes_path.name}")
 
     # 2. Load Keras model
     if not model_path.exists():
@@ -49,9 +49,9 @@ def load_model_and_classes() -> None:
             f"Vui lòng đặt model weights vào thư mục '{settings.MODEL_PATH}'."
         )
 
-    logger.info(f"⏳ Đang nạp model EfficientNetV2 từ {model_path.name}...")
+    logger.info(f"⏳ Đang nạp model từ {model_path.name}...")
     _model = models.load_model(str(model_path))
-    logger.info("✅ Nạp model EfficientNetV2 thành công!")
+    logger.info("✅ Nạp model thành công!")
 
 
 def get_model() -> tf.keras.Model:

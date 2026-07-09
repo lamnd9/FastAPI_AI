@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     # --- App ---
-    APP_NAME: str = "AI4Food Nutrition Recognition API"
+    APP_NAME: str = "Cats vs Dogs Classifier API"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
 
@@ -28,9 +28,9 @@ class Settings(BaseSettings):
 
     # --- Model ---
     MODEL_PATH: str = "models/"
-    MODEL_FILE: str = "efficientnetv2_product_model.hdf5"
-    CLASSES_PATH: str = "product_classes.txt"
-    IMAGE_SIZE: int = 224
+    MODEL_FILE: str = "cats_dogs_model.h5"
+    CLASSES_PATH: str = "cats_dogs_classes.txt"
+    IMAGE_SIZE: int = 160
 
     # --- Logging ---
     LOG_LEVEL: str = "INFO"

@@ -26,5 +26,5 @@ async def health_check():
         "status": "healthy" if model_loaded else "degraded",
         "model_loaded": model_loaded,
         "num_classes": num_classes,
-        "message": "AI4Food Recognition API is running 🚀",
+        "message": "Cats vs Dogs Classifier API is running 🚀",
     }

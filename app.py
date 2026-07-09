@@ -1,7 +1,7 @@
 """
 FastAPI Application Initialization
 ===================================
-Main application factory for the AI4Food Nutrition Recognition API.
+Main application factory for the Cats vs Dogs Classifier API.
 """
 
 from fastapi import FastAPI
@@ -17,7 +17,7 @@ def create_app() -> FastAPI:
 
     app = FastAPI(
         title=settings.APP_NAME,
-        description="API nhận diện món ăn chi tiết (840 món) sử dụng mạng EfficientNetV2",
+        description="API nhận diện Chó và Mèo sử dụng mạng MobileNetV2 (Transfer Learning)",
         version=settings.APP_VERSION,
         docs_url="/docs",
         redoc_url="/redoc",
