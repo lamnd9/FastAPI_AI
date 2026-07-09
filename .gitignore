@@ -1,0 +1,43 @@
+# ========================
+# Environment
+# ========================
+.env
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+
+# ========================
+# Model Weights
+# ========================
+models/*.pt
+models/*.pth
+models/*.onnx
+models/*.h5
+models/*.pkl
+models/*.bin
+models/*.safetensors
+!models/README.md
+
+# ========================
+# Logs
+# ========================
+logs/*.log
+logs/*.zip
+!logs/README.md
+
+# ========================
+# IDE
+# ========================
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ========================
+# OS
+# ========================
+.DS_Store
+Thumbs.db
